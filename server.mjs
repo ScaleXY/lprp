@@ -3,6 +3,7 @@ import express from 'express';
 import Configstore from 'configstore';
 import fs from 'fs';
 import open from 'open';
+import printer from 'printer';
 import child_process from 'child_process';
 
 //inits
@@ -54,7 +55,12 @@ function main()
 		res.send("Shuting down!!!");
 		process.exit();
 	});
-	
+	app.get('/printers', function (req, res) {
+		res.json(printer.getPrinters());
+	});
+	app.get('/printer', function (req, res) {
+		res.json(printer.getPrinter(req.query.printername));
+	});
 	app.listen(port)
 	open("http://127.0.0.1:" + port)
 }

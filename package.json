@@ -2,15 +2,20 @@
   "name": "lprp",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.mjs",
+  "bin": "server.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "pkg package.json -t win --out-path dist && cp ./node_modules/open/xdg-open ./dist/xdg-open"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "configstore": "^6.0.0",
     "express": "^4.18.1",
-    "open": "^8.4.0"
-  }
+    "nexe": "^4.0.0-rc.1",
+    "open": "^8.4.0",
+    "printer": "^0.4.0"
+  },
+  "NexeOptions": {}
 }
