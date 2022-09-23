@@ -11,16 +11,16 @@ on:
 
 jobs:
   build:
-
-    runs-on: 
-      ubuntu-latest
-      windows-latest
-      macos-12
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [18.x]
-        platform: ["windows", "macos"]
+      include:
+        - os: windows-latest
+          node-version: 18.x
+          platform: windows
+        - os: macos-12
+          node-version: 18.x
+          platform: macos
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
