@@ -15,17 +15,17 @@ jobs:
     strategy:
       build: [1,2,3]
       include:
-        - build:1
+        - build: 1
           os: windows-latest
           node-version: 18.x
           platform: windows
           arch: x64
-        - build:2
+        - build: 2
           os: windows-latest
           node-version: 18.x
           platform: windows
           arch: x86
-        - build:3
+        - build: 3
           os: macos-12
           node-version: 18.x
           platform: macos
