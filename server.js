@@ -207,7 +207,7 @@ function main() {
 		res.send("Shuting down!!!");
 		process.exit();
 	});
-	app.listen(port)
+	app.listen(port, argv.bind_host ?? '127.0.0.1')
 	if (argv.open_browser == true) {
 		open("http://127.0.0.1:" + port)
 	}
