@@ -13,14 +13,23 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
+      build: [1,2,3]
       include:
-        - os: windows-latest
+        - build:1
+          os: windows-latest
           node-version: 18.x
           platform: windows
-        - os: macos-12
+          arch: x64
+        - build:2
+          os: windows-latest
+          node-version: 18.x
+          platform: windows
+          arch: x86
+        - build:3
+          os: macos-12
           node-version: 18.x
           platform: macos
+          arch: x64
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
@@ -29,4 +38,4 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: node build.js --target_platfrom ${{ matrix.platform }} --target-arch x64
+    - run: node build.js --target_platfrom ${{ matrix.platform }} --target-arch ${{ matrix.arch }}
