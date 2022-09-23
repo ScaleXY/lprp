@@ -13,6 +13,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         build: [windows-x64, windows-x86, macos-x64]
         include:
@@ -34,12 +35,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
+      id: cp310
       with:
-        python-version: '3.10' 
+        python-version: '3.10'
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: node build.js --target_platfrom ${{ matrix.platform }} --target-arch ${{ matrix.arch }}
+    - run: node build.js --python_path ${{ steps.cp310.outputs.python-path }} --target_platfrom ${{ matrix.platform }} --target-arch ${{ matrix.arch }}

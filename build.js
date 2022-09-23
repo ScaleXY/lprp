@@ -5,7 +5,7 @@ const { hideBin } = require('yargs/helpers');
 
 const argv = yargs(hideBin(process.argv)).argv
 
-function compileForTraget(platform, target) {
+function compileForTraget(platform, target, python_path) {
   compile({
     input: 'server.js',
     targets: [
@@ -31,7 +31,7 @@ function compileForTraget(platform, target) {
     output: 'output/lprp_' + platform + '_' + target + '.exe',
     verbose: true,
     ico: 'renzo.ico',
-	python: '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3',
+	python: python_path,
     rc: {
       CompanyName: "Renzo Solutions Private Limited",
       ProductName: "Renzo LPRP",
@@ -47,4 +47,4 @@ function compileForTraget(platform, target) {
   })
 }
 
-compileForTraget(argv.target_platfrom, argv.target_arch);	
+compileForTraget(argv.target_platfrom, argv.target_arch, argv.python_path);	
