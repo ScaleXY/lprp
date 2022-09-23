@@ -38,11 +38,10 @@ function compileForTraget(platform, target) {
       FileDescription: "Local reverse proxy for printers",
       FileVersion: "0.1.1",
       ProductVersion: "0.1.1",
-      OriginalFilename: 'lprp_' + platform + '_' + target + '.exe',
+      OriginalFilename: 'lprp_' + platform + '_' + target + (platform == 'windows' ? '.exe' : ''),
       InternalName: "lprp",
       LegalCopyright: "© 2022 Renzo Solutions Private Limited",
-    },
-    clean: clean,
+    }
   }).then(() => {
     console.log('success')
   })
