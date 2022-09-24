@@ -46,3 +46,10 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: node build.js --python_path ${{ steps.cp310.outputs.python-path }} --target_platfrom ${{ matrix.platform }} --target-arch ${{ matrix.arch }}
+
+    - name: Assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: builds
+          path: |
+            output/
