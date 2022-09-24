@@ -28,7 +28,7 @@ function compileForTraget(platform, target, python_path) {
       }
     ],
     build: true,
-    output: 'output/lprp_' + platform + '_' + target + '.exe',
+    output: 'output/lprp_' + platform + '_' + target + (platform.match('windows') == null ? '' : '.exe'),
     verbose: true,
     ico: 'renzo.ico',
 	python: python_path,
@@ -38,7 +38,7 @@ function compileForTraget(platform, target, python_path) {
       FileDescription: "Local reverse proxy for printers",
       FileVersion: "0.1.1",
       ProductVersion: "0.1.1",
-      OriginalFilename: 'lprp_' + platform + '_' + target + (platform == 'windows' ? '.exe' : ''),
+      OriginalFilename: 'lprp_' + platform + '_' + target + (platform.match('windows') == null ? '' : '.exe'),
       InternalName: "lprp",
       LegalCopyright: "© 2022 Renzo Solutions Private Limited",
     }
@@ -47,4 +47,4 @@ function compileForTraget(platform, target, python_path) {
   })
 }
 
-compileForTraget(argv.target_platfrom, argv.target_arch, argv.python_path);	
+compileForTraget(argv.target_platform, argv.target_arch, argv.python_path);	
