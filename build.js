@@ -34,7 +34,7 @@ function compileForTraget(platform, target, python_path) {
 		ico: 'renzo.ico',
 		python: python_path,
 		configure: (isWindows ? '' : '--ninja'),
-		make: (isWindows ? '' : '-j3'),
+		// make: (isWindows ? '' : '-j3'),
 		rc: {
 			CompanyName: "Renzo Solutions Private Limited",
 			ProductName: "Renzo LPRP",

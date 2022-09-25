@@ -32,6 +32,11 @@ jobs:
             node-version: 18.x
             platform: macos
             arch: x64
+          - build: macos-arm64
+            os: macos-12
+            node-version: 18.x
+            platform: macos
+            arch: arm64
     steps:
     - uses: actions/checkout@v3
     - uses: ilammy/setup-nasm@v1
@@ -47,11 +52,11 @@ jobs:
         cache: 'npm'
     - run: mkdir output
     - run: npm ci
-    - run: node build.js --python_path ${{ steps.cp310.outputs.python-path }} --target_platfrom ${{ matrix.platform }} --target-arch ${{ matrix.arch }}
+    - run: node build.js --python_path ${{ steps.cp310.outputs.python-path }} --target_platfrom ${{ matrix.platform }} --target_arch ${{ matrix.arch }}
 
     - name: Assets
       uses: actions/upload-artifact@v3
       with:
-        name: builds
+        name: ${{ matrix.build }}_build
         path: |
           output/
