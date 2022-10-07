@@ -10,18 +10,14 @@
   },
   "author": "",
   "license": "ISC",
-  "optionalDependencies": {
-    "pdf-to-printer": "^5.3.0",
-	"unix-print": "^1.2.0"
-  },
   "dependencies": {
     "conf": "^10.2.0",
-    "configstore": "^6.0.0",
     "express": "^4.18.1",
     "fetch": "^1.1.0",
     "nexe": "^4.0.0-rc.1",
     "node-startup-manager": "^0.1.3",
     "open": "^8.4.0",
+    "pdf-to-printer2": "^2.0.8",
     "tmp": "^0.2.1",
     "uuid": "^9.0.0",
     "yargs": "^17.5.1"

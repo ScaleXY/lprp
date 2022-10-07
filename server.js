@@ -8,22 +8,13 @@ const startupManager  = require('node-startup-manager');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const Conf = require('conf');
-var fetchUrl = require("fetch").fetchUrl;
+var fetch = require("fetch");
+var path = require("path");
 const os = require('os');
-var print = require("pdf-to-printer");
-// var print = require("pdf-to-printer");
+var printer = require("pdf-to-printer2");
 var https = require('https');
 
-// const { start } = require('repl');
-// const getDirName = require('path').dirname;
-
-// Non windows platforms
-// switch(os.platform())
-// {
-// 	case "win32": break;
-// 	case "darwin": print = require("unix-print"); break;
-// 	default: console.log("Invalid platform(" + os.platform() + ")!"); process.exit(); break;
-// }
+const BASE_URL = "https://localhost.scalexy.cloud";
 
 //inits
 const app = express()
@@ -72,43 +63,43 @@ function fetchPrinterFromUUID(printers, uuid)
     });
     return retval;
 }
+function save(buffer) {
+	const pdf_path = path.join(__dirname, "./pdfs/" + uuidv4() + ".pdf");
+	fs.writeFileSync(pdf_path, buffer, "binary");
+	return pdf_path;
+}
+  
+function remove(pdf_path) {
+	fs.unlinkSync(pdf_path);
+}
 
-async function makePrintCall(url, printer_uuid, options = {}) {	
-	var uuid = uuidv4();
+async function makePrintCall(res, url, printer_uuid, options = {}) {
+	function onSuccess() { res.json({ "success": true, "message": "File printed" }); }
+	function onError(error) { res.json({ "success": false, "message": error }); }
 	var current_printer = fetchPrinterFromUUID(config.get('printers'), printer_uuid);
-	options.printer = current_printer.deviceId;
-	// options.sumatraPdfPath = "./SumatraPDF.exe"
-
-	.print(pdf)
-	.then(onSuccess)
-	.catch(onError)
-	.finally(() => remove(pdf));
-	fetchUrl(url, (error, meta, body) => {
-		fs.writeFile('./pdfs/' + uuid + '.pdf', body, (err) => {
-			if (err) {
-				console.log(err);
-			} else {
-				print.print('./pdfs/' + uuid + '.pdf', options)
-				.then(() => {
-					fs.rm('./pdfs/' + uuid + '.pdf', {}, () => {});
-					// return true;
-				})
-				// .catch((e) => {
-				// 	return e;
-				// })
-			}
-		})
-	});
+	if(current_printer == null){
+		onError("Invalid printer uuid");
+	} else {
+		options.printer = current_printer.deviceId;
+		fetch.fetchUrl(url, (err, meta, body) => {
+			const pdf_path = save(body);
+			printer
+				.print(pdf_path)
+				.then(onSuccess)
+				.catch(onError)
+				.finally(() => remove(pdf_path));
+		});
+	}
 }
 
 async function syncPrinters() {
 	printers = config.get('printers');
 	// Add new printers
-	var list_of_printers = await print.getPrinters();
+	var list_of_printers = await printer.getPrinters();
 	list_of_printers.forEach((item1) => {
 		var found = false;
 		printers.forEach((item2) => {
-			if (item2.name == item1.name)
+			if (item2.deviceId == item1.deviceId)
 				found = true;
 		});
 		if (found == false) {
@@ -120,7 +111,7 @@ async function syncPrinters() {
 	printers.forEach((item2, index2) => {
 		var found = false;
 		list_of_printers.forEach((item1) => {
-			if (item2.name == item1.name)
+			if (item2.deviceId == item1.deviceId)
 				found = true;
 		})
 		if (found == false) {
@@ -149,7 +140,7 @@ function main() {
 	app.get('/printers', (req, res) => {
 		var temp_printers = printers;
 		temp_printers.forEach((item1, index1) => {
-			item1.link = "https://127.0.0.1:" + port + "/printers/" + item1.uuid;
+			item1.link = BASE_URL + ":" + port + "/printers/" + item1.uuid;
 		});
 		res.json(temp_printers);
 	});
@@ -157,26 +148,19 @@ function main() {
 		res.json(fetchPrinterFromUUID(printers, req.params.uuid));
 	});
 	app.post('/printers/print', async (req, res) => {
-		resp = await makePrintCall(req.body.url, config.get('default_printer'));
-		if(resp == true) res.json({ "success": true, "message": "File printed" });
-		res.json({ "success": false, "message": resp });
+		makePrintCall(res, req.body.url, config.get('default_printer'));
 	});
 	app.post('/printers/:uuid/print', (req, res) => {
-		makePrintCall(req.body.url, req.params.uuid);
-		res.json({
-			"success": true
-		});
+		makePrintCall(res, req.body.url, req.params.uuid);
 	});
 	app.post('/printers/:uuid/set-default', (req, res) => {
 		config.set('default_printer', req.params.uuid);
-		res.json({
-			"success": true
-		});
+		res.json({ "success": true, "message": "Default printer set!" });
 	});
 	app.post('/service/set-port', (req, res) => {
 		var new_port = req.body.port ?? 50895;
-		res.send('Port set to ' + new_port)
 		config.set('port', new_port);
+		res.json({ "success": true, "message": "Port set to " + new_port });
 		process.on("exit", () => {
 			child_process.spawn(process.argv.shift(), process.argv, {
 				cwd: process.cwd(),
@@ -187,7 +171,7 @@ function main() {
 		process.exit();
 	});
 	app.post('/service/shutdown', (req, res) => {
-		res.send("Shuting down!!!");
+		res.json({ "success": true, "message": "Shuting down." });
 		process.exit();
 	});
 	var options = {
@@ -200,20 +184,14 @@ function main() {
 		console.log("Express server listening on port " + port);
 	});
 	if (argv.open_browser == true) {
-		open("https://localhost.scalexy.cloud:" + port)
+		open(BASE_URL + ":" + port)
 	}
 	if (argv.run_without_clean != true) {
 		fs.rm('./pdfs/', { recursive: true, force: true }, (err) => {
 			if (err)
 				console.error(err);
 			else
-				fs.mkdir('./pdfs', {},  (err) => {
-					if (err) {
-						console.error(err);
-					}
-					else {
-					}
-				});
+				fs.mkdir('./pdfs', {},  (err) => { if (err) console.error(err); });
 		})
 	}
 }
@@ -224,9 +202,8 @@ async function boot() {
 	if (argv.uninstall_service == true) {
 		uninstall_service();
 	}
-		
-	if(!(argv.install_service || argv.uninstall_service) == true)
-	{
+	if(!(argv.install_service || argv.uninstall_service) == true) {
+		make_dirs();
 		await update_ssl();
 		main();
 	}
@@ -234,37 +211,23 @@ async function boot() {
 
 function install_service() {
 	startupManager.add(install_options)
-		.then(() => {
-			console.log('App added to startup')
-		})
-		.catch((e) => {
-			Console.log('Something went wrong; Perms?', e)
-    });
+		.then(() => { console.log('App added to startup'); })
+		.catch((e) => { console.log('Something went wrong; Perms?', e); });
 }
 function uninstall_service() {
 	startupManager.remove(install_options.name)
-    .then(() => {
-        console.log('App removed from startup')
-    })
-    .catch((e) => {
-        Console.log('Something went wrong; Perms?', e)
-    });
+		.then(() => { console.log('App removed from startup'); })
+		.catch((e) => { console.log('Something went wrong; Perms?', e); });
+}
+async function make_dirs() {
+	if (!fs.existsSync('./ssl')) fs.mkdirSync('./ssl');
+	if (!fs.existsSync('./pdfs')) fs.mkdirSync('./pdfs');
 }
 async function update_ssl() {
-	if (!fs.existsSync('./ssl'))
-		fs.mkdirSync('./ssl');
-	[
-		"ca_bundle.crt",
-		"certificate.crt",
-		"private.key",
-	].forEach(async (item, index) => {
-		console.log(item)
-		await fetchUrl("https://files.scalexy.cloud/localhost/" + item, (error, meta, body) => {
-			if (error) {
-				console.log(error);
-			} else {
-				fs.writeFileSync('./ssl/' + item, body);
-			}
+	[ "ca_bundle.crt", "certificate.crt", "private.key"].forEach(async (item, index) => {
+		await fetch.fetchUrl("https://files.scalexy.cloud/localhost/" + item, (error, meta, body) => {
+			if (error) { console.log(error); }
+			else { fs.writeFileSync('./ssl/' + item, body); }
 		});
 	});
 }
