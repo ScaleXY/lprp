@@ -6,7 +6,7 @@ const { isWindows } = require("nexe/lib/util");
 
 const argv = yargs(hideBin(process.argv)).argv
 
-function compileForTraget(platform, target, python_path) {	
+function compileForTraget(platform, target, python_path, clean) {	
 	compile({
 		input: 'server.js',
 		targets: [
@@ -51,4 +51,4 @@ function compileForTraget(platform, target, python_path) {
 	})
 }
 
-compileForTraget(argv.target_platform, argv.target_arch, argv.python_path);	
+compileForTraget(argv.target_platform, argv.target_arch, argv.python_path, argv.clean || false);	

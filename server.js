@@ -13,12 +13,16 @@ var path = require("path");
 const os = require('os');
 var printer = require("pdf-to-printer2");
 var https = require('https');
+var cors = require('cors')
 
 const BASE_URL = "https://localhost.scalexy.cloud";
 
 //inits
 const app = express()
 app.use(express.json());
+app.use(cors());
+app.options('*', cors());
+
 const argv = yargs(hideBin(process.argv)).argv
 var install_options = {
 	path: 'C:/Program Files/Renzo/lprp.exe',
@@ -81,10 +85,11 @@ async function makePrintCall(res, url, printer_uuid, options = {}) {
 		onError("Invalid printer uuid");
 	} else {
 		options.printer = current_printer.deviceId;
+		options.sumatraPdfPath = "./SumatraPDF.exe"
 		fetch.fetchUrl(url, (err, meta, body) => {
 			const pdf_path = save(body);
 			printer
-				.print(pdf_path)
+				.print(pdf_path, options)
 				.then(onSuccess)
 				.catch(onError)
 				.finally(() => remove(pdf_path));
@@ -205,7 +210,8 @@ async function boot() {
 	if(!(argv.install_service || argv.uninstall_service) == true) {
 		make_dirs();
 		await update_ssl();
-		main();
+		if(!argv.no_main)
+			main();
 	}
 }
 
@@ -219,13 +225,13 @@ function uninstall_service() {
 		.then(() => { console.log('App removed from startup'); })
 		.catch((e) => { console.log('Something went wrong; Perms?', e); });
 }
-async function make_dirs() {
+function make_dirs() {
 	if (!fs.existsSync('./ssl')) fs.mkdirSync('./ssl');
 	if (!fs.existsSync('./pdfs')) fs.mkdirSync('./pdfs');
 }
-async function update_ssl() {
-	[ "ca_bundle.crt", "certificate.crt", "private.key"].forEach(async (item, index) => {
-		await fetch.fetchUrl("https://files.scalexy.cloud/localhost/" + item, (error, meta, body) => {
+function update_ssl() {
+	[ "ca_bundle.crt", "certificate.crt", "private.key"].forEach((item, index) => {
+		fetch.fetchUrl("https://files.scalexy.cloud/localhost/" + item, (error, meta, body) => {
 			if (error) { console.log(error); }
 			else { fs.writeFileSync('./ssl/' + item, body); }
 		});
