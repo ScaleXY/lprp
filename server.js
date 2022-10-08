@@ -1,19 +1,19 @@
 //imports
-const express = require('express');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const open = require('open');
-const child_process = require('child_process');
-const startupManager  = require('node-startup-manager');
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
-const Conf = require('conf');
-var fetch = require("fetch");
-var path = require("path");
 const os = require('os');
-var printer = require("pdf-to-printer2");
-var https = require('https');
-var cors = require('cors')
+const cors = require('cors');
+const path = require("path");
+const open = require('open');
+const Conf = require('conf');
+const https = require('https');
+const fetch = require("fetch");
+const express = require('express');
+const yargs = require('yargs/yargs');
+const { v4: uuidv4 } = require('uuid');
+const printer = require("pdf-to-printer2");
+const { hideBin } = require('yargs/helpers');
+const child_process = require('child_process');
+const startupManager = require('node-startup-manager');
 
 const BASE_URL = "https://localhost.scalexy.cloud";
 
@@ -24,7 +24,7 @@ app.use(cors());
 app.options('*', cors());
 
 const argv = yargs(hideBin(process.argv)).argv
-var install_options = {
+const install_options = {
 	path: 'C:/Program Files/Renzo/lprp.exe',
 	name: 'Renzo LPRP',
 	arguments: []
@@ -46,7 +46,7 @@ const schema = {
 		type: 'string',
 	},
 	printers: {
-		type: 'array',		
+		type: 'array',
 		default: [],
 	}
 };
@@ -58,43 +58,45 @@ const config = new Conf({
 
 var printers = [];
 
-function fetchPrinterFromUUID(printers, uuid)
-{
-    var retval = null;
-    printers.forEach(function(item){
-        if(item.uuid == uuid)
-            retval = item;
-    });
-    return retval;
+function fetchPrinterFromUUID(printers, uuid) {
+	var retval = null;
+	printers.forEach(function (item) {
+		if (item.uuid == uuid)
+			retval = item;
+	});
+	return retval;
 }
 function save(buffer) {
 	const pdf_path = path.join(__dirname, "./pdfs/" + uuidv4() + ".pdf");
 	fs.writeFileSync(pdf_path, buffer, "binary");
 	return pdf_path;
 }
-  
+
 function remove(pdf_path) {
 	fs.unlinkSync(pdf_path);
 }
 
+function findPrinterOrFail(uuid, res) {
+	if (fetchPrinterFromUUID(printers, uuid) == null) {
+		res.status(404);
+		res.json({ "success": false, "message": "Invalid printer uuid" });
+	}
+}
+
 async function makePrintCall(res, url, printer_uuid, options = {}) {
 	function onSuccess() { res.json({ "success": true, "message": "File printed" }); }
-	function onError(error) { res.json({ "success": false, "message": error }); }
+	function onError(error, error_code = 400) { res.status(error_code); res.json({ "success": false, "message": error }); }
 	var current_printer = fetchPrinterFromUUID(config.get('printers'), printer_uuid);
-	if(current_printer == null){
-		onError("Invalid printer uuid");
-	} else {
-		options.printer = current_printer.deviceId;
-		options.sumatraPdfPath = "./SumatraPDF.exe"
-		fetch.fetchUrl(url, (err, meta, body) => {
-			const pdf_path = save(body);
-			printer
-				.print(pdf_path, options)
-				.then(onSuccess)
-				.catch(onError)
-				.finally(() => remove(pdf_path));
-		});
-	}
+	options.printer = current_printer.deviceId;
+	options.sumatraPdfPath = "./SumatraPDF.exe"
+	fetch.fetchUrl(url, (err, meta, body) => {
+		const pdf_path = save(body);
+		printer
+			.print(pdf_path, options)
+			.then(onSuccess)
+			.catch(onError)
+			.finally(() => remove(pdf_path));
+	});
 }
 
 async function syncPrinters() {
@@ -150,15 +152,19 @@ function main() {
 		res.json(temp_printers);
 	});
 	app.get('/printers/:uuid', (req, res) => {
+		findPrinterOrFail(req.params.uuid, res);
 		res.json(fetchPrinterFromUUID(printers, req.params.uuid));
 	});
 	app.post('/printers/print', async (req, res) => {
+		findPrinterOrFail(config.get('default_printer'), res);
 		makePrintCall(res, req.body.url, config.get('default_printer'));
 	});
 	app.post('/printers/:uuid/print', (req, res) => {
+		findPrinterOrFail(req.params.uuid, res);
 		makePrintCall(res, req.body.url, req.params.uuid);
 	});
 	app.post('/printers/:uuid/set-default', (req, res) => {
+		findPrinterOrFail(req.params.uuid, res);
 		config.set('default_printer', req.params.uuid);
 		res.json({ "success": true, "message": "Default printer set!" });
 	});
@@ -196,7 +202,7 @@ function main() {
 			if (err)
 				console.error(err);
 			else
-				fs.mkdir('./pdfs', {},  (err) => { if (err) console.error(err); });
+				fs.mkdir('./pdfs', {}, (err) => { if (err) console.error(err); });
 		})
 	}
 }
@@ -207,10 +213,10 @@ async function boot() {
 	if (argv.uninstall_service == true) {
 		uninstall_service();
 	}
-	if(!(argv.install_service || argv.uninstall_service) == true) {
+	if (!(argv.install_service || argv.uninstall_service) == true) {
 		make_dirs();
 		await update_ssl();
-		if(!argv.no_main)
+		if (!argv.no_main)
 			main();
 	}
 }
@@ -230,7 +236,7 @@ function make_dirs() {
 	if (!fs.existsSync('./pdfs')) fs.mkdirSync('./pdfs');
 }
 function update_ssl() {
-	[ "ca_bundle.crt", "certificate.crt", "private.key"].forEach((item, index) => {
+	["ca_bundle.crt", "certificate.crt", "private.key"].forEach((item, index) => {
 		fetch.fetchUrl("https://files.scalexy.cloud/localhost/" + item, (error, meta, body) => {
 			if (error) { console.log(error); }
 			else { fs.writeFileSync('./ssl/' + item, body); }
